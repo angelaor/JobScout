@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JobScout — Job Search Aggregator</title>
+<style>
+  :root{
+    --hotpink:#ff2d87;
+    --hotpink-dark:#e0176c;
+    --bg:#f5f6fa;
+    --card:#ffffff;
+    --ink:#1c1f2b;
+    --muted:#6b7080;
+    --border:#e4e6ee;
+    --accent:#3a4bff;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+  }
+  header{
+    background:linear-gradient(135deg,#1c1f2b,#2d3250);
+    color:#fff;
+    padding:32px 24px 24px;
+    text-align:center;
+  }
+  header h1{margin:0 0 6px; font-size:28px; letter-spacing:-0.5px;}
+  header h1 span{color:var(--hotpink);}
+  header p{margin:0; color:#c7cae0; font-size:14px;}
+
+  .container{max-width:920px; margin:0 auto; padding:24px;}
+
+  .tabs{display:flex; gap:8px; background:var(--card); border-radius:12px; padding:6px; box-shadow:0 1px 3px rgba(0,0,0,0.06); margin-bottom:20px;}
+  .tab-btn{
+    flex:1; padding:10px 14px; border:none; background:transparent; border-radius:8px;
+    font-size:14px; font-weight:600; color:var(--muted); cursor:pointer; transition:all .15s;
+  }
+  .tab-btn.active{background:var(--accent); color:#fff;}
+
+  .panel{background:var(--card); border-radius:12px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,0.06); margin-bottom:20px;}
+  .panel h2{font-size:15px; margin:0 0 12px;}
+  textarea{
+    width:100%; min-height:130px; border:1px solid var(--border); border-radius:8px;
+    padding:12px; font-size:14px; font-family:inherit; resize:vertical;
+  }
+  input[type=text]{
+    width:100%; border:1px solid var(--border); border-radius:8px; padding:11px 12px; font-size:14px;
+  }
+  .row{display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;}
+  .row select{border:1px solid var(--border); border-radius:8px; padding:10px; font-size:13px; background:#fff;}
+  .btn-primary{
+    background:var(--accent); color:#fff; border:none; border-radius:8px; padding:11px 20px;
+    font-size:14px; font-weight:600; cursor:pointer;
+  }
+  .btn-primary:hover{background:#2c3ae0;}
+  .hint{font-size:12px; color:var(--muted); margin-top:8px;}
+
+  .results-meta{display:flex; justify-content:space-between; align-items:center; margin:8px 2px 12px;}
+  .results-meta span{font-size:13px; color:var(--muted);}
+
+  .job-card{
+    background:var(--card); border:1px solid var(--border); border-radius:12px;
+    padding:16px 18px; margin-bottom:12px; display:flex; gap:14px; align-items:flex-start;
+  }
+  .logo{
+    width:42px; height:42px; border-radius:10px; background:var(--accent); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-weight:700; font-size:16px; flex-shrink:0;
+  }
+  .job-body{flex:1; min-width:0;}
+  .job-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap;}
+  .job-title{font-size:16px; font-weight:700; margin:0;}
+  .job-company{font-size:13px; color:var(--accent); font-weight:600; margin:2px 0 6px;}
+  .job-meta{font-size:12px; color:var(--muted); margin-bottom:8px;}
+  .badge{
+    display:inline-block; font-size:11px; font-weight:700; padding:3px 8px; border-radius:20px;
+    background:#eef0ff; color:var(--accent); margin-right:6px;
+  }
+  .tags{margin:8px 0;}
+  .tag{
+    display:inline-block; font-size:11px; background:#f1f2f7; color:var(--muted);
+    padding:3px 8px; border-radius:6px; margin:0 5px 5px 0;
+  }
+  .actions{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;}
+  .link-btn{
+    font-size:12.5px; font-weight:600; text-decoration:none; padding:8px 12px; border-radius:7px;
+    border:1px solid var(--border); color:var(--ink); background:#fff;
+  }
+  .link-btn:hover{background:#f6f7fb;}
+  .similar-btn{
+    font-size:12.5px; font-weight:700; padding:8px 12px; border-radius:7px; border:none;
+    background:var(--hotpink); color:#fff; cursor:pointer;
+    box-shadow:0 2px 8px rgba(255,45,135,0.35);
+  }
+  .similar-btn:hover{background:var(--hotpink-dark);}
+  .empty{text-align:center; padding:40px 10px; color:var(--muted); font-size:14px;}
+  footer{text-align:center; padding:20px; font-size:12px; color:var(--muted);}
+  footer a{color:var(--muted);}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Job<span>Scout</span></h1>
+  <p>Search across the web's top job boards, then jump straight to the company's own posting.</p>
+</header>
+
+<div class="container">
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tabResumeBtn" onclick="switchTab('resume')">📄 Search by Resume</button>
+    <button class="tab-btn" id="tabKeywordBtn" onclick="switchTab('keyword')">🔎 Search by Keywords</button>
+  </div>
+
+  <div class="panel" id="resumePanel">
+    <h2>Paste your resume</h2>
+    <textarea id="resumeInput" placeholder="Paste your resume text here — JobScout will pull out your skills and titles and match them to open roles..."></textarea>
+    <div class="row">
+      <button class="btn-primary" onclick="searchByResume()">Find Matching Roles</button>
+    </div>
+    <p class="hint">Nothing leaves this page — matching happens entirely in your browser.</p>
+  </div>
+
+  <div class="panel" id="keywordPanel" style="display:none;">
+    <h2>Search by job title or keyword</h2>
+    <input type="text" id="keywordInput" placeholder="e.g. Product Manager, React, Data Analyst...">
+    <div class="row">
+      <select id="sourceFilter"><option value="">All job boards</option></select>
+      <select id="locationFilter"><option value="">All locations</option></select>
+      <button class="btn-primary" onclick="searchByKeyword()">Search Jobs</button>
+    </div>
+  </div>
+
+  <div class="results-meta">
+    <span id="resultsCount">Paste a resume or search a keyword to see matching roles.</span>
+    <span id="sourcesLine"></span>
+  </div>
+
+  <div id="results"></div>
+
+  <footer>
+    Prototype build — job listings are sample data. "View Company Posting" links go to each company's real live careers search page.<br>
+    Built for Angela — JobScout
+  </footer>
+</div>
+
+<script>
+/* ---------- Mock dataset ---------- */
+const JOBS = [
+  {id:1, title:"Software Engineer, Backend", company:"Google", location:"Mountain View, CA", source:"LinkedIn",
+   sourceUrl:"https://www.linkedin.com/jobs/search/?keywords=Software%20Engineer%20Backend%20Google",
+   careerUrl:"https://www.google.com/about/careers/applications/jobs/results?q=Software%20Engineer",
+   tags:["python","java","backend","distributed systems","api","cloud"], posted:"2 days ago"},
+  {id:2, title:"Product Manager, Search", company:"Google", location:"New York, NY", source:"Indeed",
+   sourceUrl:"https://www.indeed.com/jobs?q=Product+Manager+Google",
+   careerUrl:"https://www.google.com/about/careers/applications/jobs/results?q=Product%20Manager",
+   tags:["product management","roadmap","analytics","agile","strategy"], posted:"5 days ago"},
+  {id:3, title:"Data Scientist, ML Infrastructure", company:"Google", location:"Seattle, WA", source:"Glassdoor",
+   sourceUrl:"https://www.glassdoor.com/Job/jobs.htm?sc.keyword=Data+Scientist+Google",
+   careerUrl:"https://www.google.com/about/careers/applications/jobs/results?q=Data%20Scientist",
+   tags:["machine learning","python","sql","statistics","tensorflow"], posted:"1 day ago"},
+  {id:4, title:"UX Designer, Cloud", company:"Google", location:"Remote", source:"ZipRecruiter",
+   sourceUrl:"https://www.ziprecruiter.com/candidate/search?search=UX+Designer+Google",
+   careerUrl:"https://www.google.com/about/careers/applications/jobs/results?q=UX%20Designer",
+   tags:["ux","design","figma","research","prototyping"], posted:"3 days ago"},
+
+  {id:5, title:"Cloud Solutions Architect", company:"Microsoft", location:"Redmond, WA", source:"LinkedIn",
+   sourceUrl:"https://www.linkedin.com/jobs/search/?keywords=Cloud%20Solutions%20Architect%20Microsoft",
+   careerUrl:"https://jobs.careers.microsoft.com/global/en/search?q=Cloud%20Solutions%20Architect",
+   tags:["azure","cloud","architecture","devops","kubernetes"], posted:"4 days ago"},
+  {id:6, title:"Senior Software Engineer, Teams", company:"Microsoft", location:"Redmond, WA", source:"Indeed",
+   sourceUrl:"https://www.indeed.com/jobs?q=Senior+Software+Engineer+Microsoft",
+   careerUrl:"https://jobs.careers.microsoft.com/global/en/search?q=Software%20Engineer",
+   tags:["c#","javascript","react","backend","api"], posted:"1 week ago"},
+  {id:7, title:"Marketing Manager, Xbox", company:"Microsoft", location:"Remote", source:"Monster",
+   sourceUrl:"https://www.monster.com/jobs/search?q=Marketing+Manager+Microsoft",
+   careerUrl:"https://jobs.careers.microsoft.com/global/en/search?q=Marketing%20Manager",
+   tags:["marketing","campaigns","branding","analytics"], posted:"6 days ago"},
+
+  {id:8, title:"Software Development Engineer II", company:"Amazon", location:"Austin, TX", source:"LinkedIn",
+   sourceUrl:"https://www.linkedin.com/jobs/search/?keywords=SDE%20II%20Amazon",
+   careerUrl:"https://www.amazon.jobs/en/search?base_query=Software+Development+Engineer",
+   tags:["java","aws","distributed systems","backend","api"], posted:"2 days ago"},
+  {id:9, title:"Business Analyst, Supply Chain", company:"Amazon", location:"Seattle, WA", source:"Glassdoor",
+   sourceUrl:"https://www.glassdoor.com/Job/jobs.htm?sc.keyword=Business+Analyst+Amazon",
+   careerUrl:"https://www.amazon.jobs/en/search?base_query=Business+Analyst",
+   tags:["business analysis","sql","excel","supply chain","reporting"], posted:"3 days ago"},
+  {id:10, title:"Customer Success Manager, AWS", company:"Amazon", location:"Remote", source:"ZipRecruiter",
+   sourceUrl:"https://www.ziprecruiter.com/candidate/search?search=Customer+Success+Manager+AWS",
+   careerUrl:"https://www.amazon.jobs/en/search?base_query=Customer+Success",
+   tags:["customer success","account management","aws","cloud","saas"], posted:"5 days ago"},
+
+  {id:11, title:"Product Designer, Reality Labs", company:"Meta", location:"Menlo Park, CA", source:"LinkedIn",
+   sourceUrl:"https://www.linkedin.com/jobs/search/?keywords=Product%20Designer%20Meta",
+   careerUrl:"https://www.metacareers.com/jobs/?q=Product%20Designer",
+   tags:["design","figma","product design","research","prototyping"], posted:"1 day ago"},
+  {id:12, title:"Machine Learning Engineer, Ads", company:"Meta", location:"New York, NY", source:"Indeed",
+   sourceUrl:"https://www.indeed.com/jobs?q=Machine+Learning+Engineer+Meta",
+   careerUrl:"https://www.metacareers.com/jobs/?q=Machine%20Learning%20Engineer",
+   tags:["machine learning","python","pytorch","ads","backend"], posted:"4 days ago"},
+
+  {id:13, title:"Solution Engineer", company:"Salesforce", location:"San Francisco, CA", source:"Glassdoor",
+   sourceUrl:"https://www.glassdoor.com/Job/jobs.htm?sc.keyword=Solution+Engineer+Salesforce",
+   careerUrl:"https://careers.salesforce.com/en/jobs/?search=Solution%20Engineer",
+   tags:["crm","sales engineering","saas","presales"], posted:"2 days ago"},
+  {id:14, title:"Account Executive, Enterprise", company:"Salesforce", location:"Chicago, IL", source:"LinkedIn",
+   sourceUrl:"https://www.linkedin.com/jobs/search/?keywords=Account%20Executive%20Salesforce",
+   careerUrl:"https://careers.salesforce.com/en/jobs/?search=Account%20Executive",
+   tags:["sales","account management","crm","enterprise","negotiation"], posted:"6 days ago"},
+
+  {id:15, title:"iOS Software Engineer", company:"Apple", location:"Cupertino, CA", source:"Indeed",
+   sourceUrl:"https://www.indeed.com/jobs?q=iOS+Software+Engineer+Apple",
+   careerUrl:"https://jobs.apple.com/en-us/search?search=iOS%20Engineer",
+   tags:["swift","ios","mobile","xcode","objective-c"], posted:"3 days ago"},
+
+  {id:16, title:"Content Strategist, Originals", company:"Netflix", location:"Los Gatos, CA", source:"LinkedIn",
+   sourceUrl:"https://www.linkedin.com/jobs/search/?keywords=Content%20Strategist%20Netflix",
+   careerUrl:"https://explore.jobs.netflix.net/careers?query=Content%20Strategist",
+   tags:["content strategy","media","analytics","marketing"], posted:"1 week ago"},
+
+  {id:17, title:"Experience Designer", company:"Adobe", location:"San Jose, CA", source:"ZipRecruiter",
+   sourceUrl:"https://www.ziprecruiter.com/candidate/search?search=Experience+Designer+Adobe",
+   careerUrl:"https://careers.adobe.com/us/en/search-results?keywords=Experience%20Designer",
+   tags:["ux","design","figma","research"], posted:"4 days ago"},
+
+  {id:18, title:"Backend Engineer, Payments", company:"Stripe", location:"Remote", source:"LinkedIn",
+   sourceUrl:"https://www.linkedin.com/jobs/search/?keywords=Backend%20Engineer%20Stripe",
+   careerUrl:"https://stripe.com/jobs/search?query=Backend%20Engineer",
+   tags:["backend","ruby","api","payments","distributed systems"], posted:"2 days ago"},
+
+  {id:19, title:"Community Operations Manager", company:"Airbnb", location:"San Francisco, CA", source:"Monster",
+   sourceUrl:"https://www.monster.com/jobs/search?q=Community+Operations+Manager+Airbnb",
+   careerUrl:"https://careers.airbnb.com/positions/?_position_keywords=Community%20Operations",
+   tags:["operations","customer success","community","trust and safety"], posted:"5 days ago"},
+
+  {id:20, title:"Data Analyst, Personalization", company:"Spotify", location:"Remote", source:"Glassdoor",
+   sourceUrl:"https://www.glassdoor.com/Job/jobs.htm?sc.keyword=Data+Analyst+Spotify",
+   careerUrl:"https://www.lifeatspotify.com/jobs?q=Data%20Analyst",
+   tags:["sql","data analysis","python","analytics","tableau"], posted:"3 days ago"},
+
+  {id:21, title:"DevOps Engineer, Marketplace", company:"Uber", location:"San Francisco, CA", source:"Indeed",
+   sourceUrl:"https://www.indeed.com/jobs?q=DevOps+Engineer+Uber",
+   careerUrl:"https://www.uber.com/us/en/careers/list/?query=DevOps%20Engineer",
+   tags:["devops","kubernetes","aws","docker","ci/cd"], posted:"1 day ago"},
+];
+
+const SOURCES = [...new Set(JOBS.map(j=>j.source))].sort();
+const LOCATIONS = [...new Set(JOBS.map(j=>j.location))].sort();
+
+const sourceFilter = document.getElementById('sourceFilter');
+SOURCES.forEach(s=>{
+  const o=document.createElement('option'); o.value=s; o.textContent=s; sourceFilter.appendChild(o);
+});
+const locationFilter = document.getElementById('locationFilter');
+LOCATIONS.forEach(l=>{
+  const o=document.createElement('option'); o.value=l; o.textContent=l; locationFilter.appendChild(o);
+});
+
+/* ---------- Tabs ---------- */
+function switchTab(tab){
+  document.getElementById('resumePanel').style.display = tab==='resume' ? 'block' : 'none';
+  document.getElementById('keywordPanel').style.display = tab==='keyword' ? 'block' : 'none';
+  document.getElementById('tabResumeBtn').classList.toggle('active', tab==='resume');
+  document.getElementById('tabKeywordBtn').classList.toggle('active', tab==='keyword');
+}
+
+/* ---------- Known skill/title vocabulary used to parse resumes ---------- */
+const VOCAB = [...new Set(JOBS.flatMap(j=>j.tags))];
+
+function searchByResume(){
+  const text = document.getElementById('resumeInput').value.toLowerCase();
+  if(!text.trim()){
+    renderResults([], "Paste some resume text first.");
+    return;
+  }
+  const foundTerms = VOCAB.filter(term => text.includes(term));
+  const scored = JOBS.map(job=>{
+    const overlap = job.tags.filter(t=>foundTerms.includes(t)).length;
+    const titleHit = job.title.toLowerCase().split(/[\s,]+/).some(w=>w.length>3 && text.includes(w)) ? 1 : 0;
+    return {job, score: overlap*2 + titleHit};
+  }).filter(x=>x.score>0)
+    .sort((a,b)=>b.score-a.score)
+    .map(x=>x.job);
+
+  if(scored.length===0){
+    renderResults([], "No strong matches found in your resume text. Try the Keyword search tab instead.");
+  } else {
+    renderResults(scored, null, `Matched from your resume: ${foundTerms.slice(0,8).join(', ') || 'title keywords'}`);
+  }
+}
+
+function searchByKeyword(){
+  const kw = document.getElementById('keywordInput').value.toLowerCase().trim();
+  const src = document.getElementById('sourceFilter').value;
+  const loc = document.getElementById('locationFilter').value;
+
+  let matches = JOBS.filter(job=>{
+    const hay = (job.title+" "+job.company+" "+job.tags.join(" ")).toLowerCase();
+    const kwOk = !kw || hay.includes(kw);
+    const srcOk = !src || job.source===src;
+    const locOk = !loc || job.location===loc;
+    return kwOk && srcOk && locOk;
+  });
+
+  if(matches.length===0){
+    renderResults([], "No jobs matched those filters. Try a broader keyword.");
+  } else {
+    renderResults(matches);
+  }
+}
+
+/* ---------- Rendering ---------- */
+function renderResults(jobs, emptyMsg, note){
+  const results = document.getElementById('results');
+  const count = document.getElementById('resultsCount');
+  const sourcesLine = document.getElementById('sourcesLine');
+  results.innerHTML = '';
+
+  if(!jobs || jobs.length===0){
+    count.textContent = emptyMsg || "No results.";
+    sourcesLine.textContent = '';
+    if(emptyMsg){
+      results.innerHTML = `<div class="empty">${emptyMsg}</div>`;
+    }
+    return;
+  }
+
+  count.textContent = `${jobs.length} role${jobs.length===1?'':'s'} found${note? ' · '+note : ''}`;
+  const usedSources = [...new Set(jobs.map(j=>j.source))];
+  sourcesLine.textContent = 'Sources: ' + usedSources.join(', ');
+
+  jobs.forEach(job=>{
+    const peers = JOBS.filter(j=>j.company===job.company && j.id!==job.id);
+    const card = document.createElement('div');
+    card.className = 'job-card';
+    card.innerHTML = `
+      <div class="logo">${job.company.charAt(0)}</div>
+      <div class="job-body">
+        <div class="job-top">
+          <div>
+            <p class="job-title">${job.title}</p>
+            <p class="job-company">${job.company}</p>
+          </div>
+          <span class="badge">${job.source}</span>
+        </div>
+        <div class="job-meta">${job.location} · Posted ${job.posted}</div>
+        <div class="tags">${job.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+        <div class="actions">
+          <a class="link-btn" href="${job.sourceUrl}" target="_blank" rel="noopener">View on ${job.source} ↗</a>
+          <a class="link-btn" href="${job.careerUrl}" target="_blank" rel="noopener">View ${job.company} Careers Page ↗</a>
+          ${peers.length>0 ? `<button class="similar-btn" onclick='openSimilar(${JSON.stringify(job.company)}, ${job.id})'>🔥 ${peers.length} similar role${peers.length===1?'':'s'} at ${job.company}</button>` : ''}
+        </div>
+      </div>
+    `;
+    results.appendChild(card);
+  });
+}
+
+/* ---------- Similar roles page ---------- */
+function openSimilar(company, excludeId){
+  const peers = JOBS.filter(j=>j.company===company && j.id!==excludeId);
+  const win = window.open('', '_blank');
+  const rowsHtml = peers.map(j=>`
+    <div style="background:#fff;border:1px solid #e4e6ee;border-radius:12px;padding:16px 18px;margin-bottom:12px;">
+      <div style="font-size:16px;font-weight:700;">${j.title}</div>
+      <div style="font-size:13px;color:#6b7080;margin:4px 0 8px;">${j.location} · Posted ${j.posted} · ${j.source}</div>
+      <div style="margin-bottom:10px;">${j.tags.map(t=>`<span style="display:inline-block;font-size:11px;background:#f1f2f7;color:#6b7080;padding:3px 8px;border-radius:6px;margin:0 5px 5px 0;">${t}</span>`).join('')}</div>
+      <a href="${j.careerUrl}" target="_blank" rel="noopener" style="font-size:12.5px;font-weight:600;text-decoration:none;padding:8px 12px;border-radius:7px;border:1px solid #e4e6ee;color:#1c1f2b;background:#fff;">View ${j.company} Careers Page ↗</a>
+    </div>
+  `).join('');
+
+  win.document.write(`
+    <!DOCTYPE html><html><head><meta charset="UTF-8"><title>Similar roles at ${company}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f6fa;margin:0;padding:24px;color:#1c1f2b;}
+      .wrap{max-width:640px;margin:0 auto;}
+      h1{font-size:20px;margin-bottom:4px;}
+      h1 span{color:#ff2d87;}
+      p.sub{color:#6b7080;font-size:13px;margin-top:0;margin-bottom:20px;}
+    </style></head>
+    <body>
+      <div class="wrap">
+        <h1>Similar roles at <span>${company}</span></h1>
+        <p class="sub">${peers.length} other open role${peers.length===1?'':'s'} currently listed for ${company} in JobScout's sample data.</p>
+        ${rowsHtml}
+      </div>
+    </body></html>
+  `);
+  win.document.close();
+}
+</script>
+</body>
+</html>
