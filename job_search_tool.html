@@ -72,19 +72,20 @@
   }
   .job-body{flex:1; min-width:0;}
   .job-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap;}
-  .job-title{font-size:16px; font-weight:700; margin:0;}
-  .job-company{font-size:13px; color:var(--accent); font-weight:600; margin:2px 0 6px;}
-  .job-meta{font-size:12px; color:var(--muted); margin-bottom:8px;}
+  .job-title-link{
+    font-size:16px; font-weight:700; margin:0; color:var(--ink); text-decoration:none;
+  }
+  .job-title-link:hover{color:var(--accent); text-decoration:underline;}
+  .top-right{display:flex; align-items:center; gap:8px; flex-shrink:0;}
+  .job-meta{font-size:12px; color:var(--muted); margin-top:4px; margin-bottom:0;}
   .badge{
     display:inline-block; font-size:11px; font-weight:700; padding:3px 8px; border-radius:20px;
-    background:#eef0ff; color:var(--accent); margin-right:6px;
+    background:#eef0ff; color:var(--accent);
   }
-  .tags{margin:8px 0;}
-  .tag{
-    display:inline-block; font-size:11px; background:#f1f2f7; color:var(--muted);
-    padding:3px 8px; border-radius:6px; margin:0 5px 5px 0;
-  }
-  .actions{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;}
+  .match-pct{font-size:13px; font-weight:800;}
+  .match-pct.high{color:#1a9c5b;}
+  .match-pct.mid{color:#d9740b;}
+  .actions{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;}
   .link-btn{
     font-size:12.5px; font-weight:600; text-decoration:none; padding:8px 12px; border-radius:7px;
     border:1px solid var(--border); color:var(--ink); background:#fff;
@@ -119,6 +120,8 @@
     <h2>Paste your resume</h2>
     <textarea id="resumeInput" placeholder="Paste your resume text here — JobScout will pull out your skills and titles and match them to open roles..."></textarea>
     <div class="row">
+      <select id="resumeSourceFilter"><option value="">All job boards</option></select>
+      <select id="resumeLocationFilter"><option value="">All locations</option></select>
       <button class="btn-primary" onclick="searchByResume()">Find Matching Roles</button>
     </div>
     <p class="hint">Nothing leaves this page — matching happens entirely in your browser.</p>
@@ -141,8 +144,13 @@
 
   <div id="results"></div>
 
+  <div class="row" style="justify-content:center; margin-top:4px;">
+    <button class="link-btn" onclick="resetPage()">↺ Reset</button>
+  </div>
+
   <footer>
     Prototype build — job listings are sample data. "View Company Posting" links go to each company's real live careers search page.<br>
+    <strong>Privacy:</strong> No account or login required. Your resume text is never saved, stored, or sent anywhere — it's matched against job listings entirely in your browser and disappears the moment you close or reset this page.<br>
     Built for Angela — JobScout
   </footer>
 </div>
@@ -250,14 +258,30 @@ const JOBS = [
 const SOURCES = [...new Set(JOBS.map(j=>j.source))].sort();
 const LOCATIONS = [...new Set(JOBS.map(j=>j.location))].sort();
 
-const sourceFilter = document.getElementById('sourceFilter');
-SOURCES.forEach(s=>{
-  const o=document.createElement('option'); o.value=s; o.textContent=s; sourceFilter.appendChild(o);
-});
-const locationFilter = document.getElementById('locationFilter');
-LOCATIONS.forEach(l=>{
-  const o=document.createElement('option'); o.value=l; o.textContent=l; locationFilter.appendChild(o);
-});
+function populateFilter(selectEl, values){
+  values.forEach(v=>{
+    const o=document.createElement('option'); o.value=v; o.textContent=v; selectEl.appendChild(o);
+  });
+}
+populateFilter(document.getElementById('sourceFilter'), SOURCES);
+populateFilter(document.getElementById('locationFilter'), LOCATIONS);
+populateFilter(document.getElementById('resumeSourceFilter'), SOURCES);
+populateFilter(document.getElementById('resumeLocationFilter'), LOCATIONS);
+
+/* ---------- Reset ---------- */
+function resetPage(){
+  document.getElementById('resumeInput').value = '';
+  document.getElementById('keywordInput').value = '';
+  document.getElementById('sourceFilter').value = '';
+  document.getElementById('locationFilter').value = '';
+  document.getElementById('resumeSourceFilter').value = '';
+  document.getElementById('resumeLocationFilter').value = '';
+  document.getElementById('results').innerHTML = '';
+  document.getElementById('resultsCount').textContent = 'Paste a resume or search a keyword to see matching roles.';
+  document.getElementById('sourcesLine').textContent = '';
+  switchTab('resume');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
 
 /* ---------- Tabs ---------- */
 function switchTab(tab){
@@ -269,6 +293,30 @@ function switchTab(tab){
 
 /* ---------- Known skill/title vocabulary used to parse resumes ---------- */
 const VOCAB = [...new Set(JOBS.flatMap(j=>j.tags))];
+const TITLE_STOPWORDS = new Set(["and","of","the","for","a","an","to","in","on","ii","i","iii","sr","jr"]);
+
+/* Scores a job against resume text. Title words are weighted higher than skill
+   tags, since a resume's stated job titles are the strongest signal of fit. */
+function scoreJobAgainstText(job, text){
+  const titleWords = job.title.toLowerCase()
+    .replace(/[^a-z0-9\s]/g,' ')
+    .split(/\s+/)
+    .filter(w=>w.length>2 && !TITLE_STOPWORDS.has(w));
+  const uniqueTitleWords = [...new Set(titleWords)];
+  const titleMatches = uniqueTitleWords.filter(w=>text.includes(w));
+  const titleScore = uniqueTitleWords.length ? titleMatches.length/uniqueTitleWords.length : 0;
+
+  const tagMatches = job.tags.filter(t=>text.includes(t));
+  const tagScore = job.tags.length ? tagMatches.length/job.tags.length : 0;
+
+  // Title match carries more weight than skill-tag overlap.
+  const combined = (titleScore*0.65) + (tagScore*0.35);
+  return {
+    pct: Math.round(combined*100),
+    titleMatches,
+    tagMatches
+  };
+}
 
 function searchByResume(){
   const text = document.getElementById('resumeInput').value.toLowerCase();
@@ -276,20 +324,29 @@ function searchByResume(){
     renderResults([], "Paste some resume text first.");
     return;
   }
-  const foundTerms = VOCAB.filter(term => text.includes(term));
-  const scored = JOBS.map(job=>{
-    const overlap = job.tags.filter(t=>foundTerms.includes(t)).length;
-    const titleHit = job.title.toLowerCase().split(/[\s,]+/).some(w=>w.length>3 && text.includes(w)) ? 1 : 0;
-    return {job, score: overlap*2 + titleHit};
-  }).filter(x=>x.score>0)
-    .sort((a,b)=>b.score-a.score)
-    .map(x=>x.job);
+
+  const src = document.getElementById('resumeSourceFilter').value;
+  const loc = document.getElementById('resumeLocationFilter').value;
+
+  const scored = JOBS.map(job => ({job, ...scoreJobAgainstText(job, text)}))
+    .filter(x => x.pct > 0)
+    .filter(x => !src || x.job.source === src)
+    .filter(x => !loc || x.job.location === loc)
+    .sort((a,b) => b.pct - a.pct);
 
   if(scored.length===0){
-    renderResults([], "No strong matches found in your resume text. Try the Keyword search tab instead.");
-  } else {
-    renderResults(scored, null, `Matched from your resume: ${foundTerms.slice(0,8).join(', ') || 'title keywords'}`);
+    renderResults([], "No strong title or skill matches found for those filters. Try broadening your job board or location filter.");
+    return;
   }
+
+  const matchScores = {};
+  scored.forEach(x => matchScores[x.job.id] = x.pct);
+  const topTitleWords = [...new Set(scored.flatMap(x=>x.titleMatches))].slice(0,6);
+  const note = topTitleWords.length
+    ? `Ranked by title match: ${topTitleWords.join(', ')}`
+    : 'Ranked by skill overlap with your resume';
+
+  renderResults(scored.map(x=>x.job), null, note, matchScores);
 }
 
 function searchByKeyword(){
@@ -313,7 +370,11 @@ function searchByKeyword(){
 }
 
 /* ---------- Rendering ---------- */
-function renderResults(jobs, emptyMsg, note){
+function matchTier(pct){
+  return pct>=80 ? 'high' : 'mid';
+}
+
+function renderResults(jobs, emptyMsg, note, matchScores){
   const results = document.getElementById('results');
   const count = document.getElementById('resultsCount');
   const sourcesLine = document.getElementById('sourcesLine');
@@ -334,25 +395,24 @@ function renderResults(jobs, emptyMsg, note){
 
   jobs.forEach(job=>{
     const peers = JOBS.filter(j=>j.company===job.company && j.id!==job.id);
+    const pct = matchScores ? matchScores[job.id] : null;
     const card = document.createElement('div');
     card.className = 'job-card';
     card.innerHTML = `
       <div class="logo">${job.company.charAt(0)}</div>
       <div class="job-body">
         <div class="job-top">
-          <div>
-            <p class="job-title">${job.title}</p>
-            <p class="job-company">${job.company}</p>
+          <a class="job-title-link" href="${job.careerUrl}" target="_blank" rel="noopener">${job.title}</a>
+          <div class="top-right">
+            ${pct!=null ? `<span class="match-pct ${matchTier(pct)}">${pct}% match</span>` : ''}
+            <span class="badge">${job.source}</span>
           </div>
-          <span class="badge">${job.source}</span>
         </div>
         <div class="job-meta">${job.location} · Posted ${job.posted}</div>
-        <div class="tags">${job.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+        ${peers.length>0 ? `
         <div class="actions">
-          <a class="link-btn" href="${job.sourceUrl}" target="_blank" rel="noopener">View on ${job.source} ↗</a>
-          <a class="link-btn" href="${job.careerUrl}" target="_blank" rel="noopener">View ${job.company} Careers Page ↗</a>
-          ${peers.length>0 ? `<button class="similar-btn" onclick='openSimilar(${JSON.stringify(job.company)}, ${job.id})'>🔥 ${peers.length} similar role${peers.length===1?'':'s'} at ${job.company}</button>` : ''}
-        </div>
+          <button class="similar-btn" onclick='openSimilar(${JSON.stringify(job.company)}, ${job.id})'>🔥 ${peers.length} similar role${peers.length===1?'':'s'} at ${job.company}</button>
+        </div>` : ''}
       </div>
     `;
     results.appendChild(card);
