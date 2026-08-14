@@ -289,6 +289,20 @@ function switchTab(tab){
   document.getElementById('keywordPanel').style.display = tab==='keyword' ? 'block' : 'none';
   document.getElementById('tabResumeBtn').classList.toggle('active', tab==='resume');
   document.getElementById('tabKeywordBtn').classList.toggle('active', tab==='keyword');
+
+  // Switching to Keyword search after pasting a resume auto-fills the
+  // keyword box with skills detected in that resume (only if it's still empty,
+  // so we never clobber something the person typed themselves).
+  if(tab==='keyword'){
+    const keywordInput = document.getElementById('keywordInput');
+    const resumeText = document.getElementById('resumeInput').value.toLowerCase();
+    if(!keywordInput.value.trim() && resumeText.trim()){
+      const skills = VOCAB.filter(term => resumeText.includes(term));
+      if(skills.length){
+        keywordInput.value = skills.slice(0,6).join(', ');
+      }
+    }
+  }
 }
 
 /* ---------- Known skill/title vocabulary used to parse resumes ---------- */
@@ -350,13 +364,15 @@ function searchByResume(){
 }
 
 function searchByKeyword(){
-  const kw = document.getElementById('keywordInput').value.toLowerCase().trim();
+  const raw = document.getElementById('keywordInput').value.toLowerCase().trim();
+  // Support comma-separated terms (e.g. auto-filled resume skills) as an OR match.
+  const terms = raw.split(',').map(t=>t.trim()).filter(Boolean);
   const src = document.getElementById('sourceFilter').value;
   const loc = document.getElementById('locationFilter').value;
 
   let matches = JOBS.filter(job=>{
     const hay = (job.title+" "+job.company+" "+job.tags.join(" ")).toLowerCase();
-    const kwOk = !kw || hay.includes(kw);
+    const kwOk = terms.length===0 || terms.some(t=>hay.includes(t));
     const srcOk = !src || job.source===src;
     const locOk = !loc || job.location===loc;
     return kwOk && srcOk && locOk;
