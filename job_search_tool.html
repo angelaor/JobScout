@@ -548,6 +548,15 @@ function parseKeywordTerms(raw){
     .filter(Boolean);
 }
 
+/* What share of the searched terms this job actually matches — same idea as
+   the resume match %, just driven by the keyword box instead of a resume. */
+function scoreTermsAgainstJob(job, terms){
+  if(terms.length===0) return 0;
+  const hay = (job.title+" "+job.company+" "+job.tags.join(" ")).toLowerCase();
+  const matchedCount = terms.filter(t => hay.includes(t)).length;
+  return Math.round((matchedCount/terms.length)*100);
+}
+
 function searchByKeyword(){
   // A keyword search replaces the currently displayed results, so the
   // resume-specific title filter no longer applies — clear and hide it.
@@ -570,9 +579,24 @@ function searchByKeyword(){
 
   if(matches.length===0){
     renderResults([], "No jobs matched those filters. Try a broader keyword.");
-  } else {
-    renderResults(matches);
+    return;
   }
+
+  if(terms.length===0){
+    // Browsing by board/location only, with no keyword to score against —
+    // show results without a match % badge.
+    renderResults(matches);
+    return;
+  }
+
+  const scored = matches
+    .map(job => ({job, pct: scoreTermsAgainstJob(job, terms)}))
+    .sort((a,b) => b.pct - a.pct);
+
+  const matchScores = {};
+  scored.forEach(x => matchScores[x.job.id] = x.pct);
+
+  renderResults(scored.map(x=>x.job), null, null, matchScores);
 }
 
 /* ---------- Rendering ---------- */
