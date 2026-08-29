@@ -85,6 +85,14 @@
   .match-pct{font-size:13px; font-weight:800;}
   .match-pct.high{color:#1a9c5b;}
   .match-pct.mid{color:#d9740b;}
+  .perks{display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;}
+  .perk-badge{
+    display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700;
+    padding:3px 9px; border-radius:20px; border:1px solid transparent;
+  }
+  .perk-health{background:#e7f7ee; color:#1a9c5b; border-color:#c7ecd8;}
+  .perk-pay{background:#fff4e0; color:#b3720a; border-color:#f5deac;}
+  .perk-remote{background:#f0eaff; color:#6b3fd4; border-color:#ded1fb;}
   .actions{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;}
   .link-btn{
     font-size:12.5px; font-weight:600; text-decoration:none; padding:8px 12px; border-radius:7px;
@@ -198,99 +206,108 @@ const JOBS = [
   {id:1, title:"Software Engineer, Backend", company:"Google", location:"Mountain View, CA", source:"LinkedIn",
    sourceUrl:"https://www.linkedin.com/jobs/search/?keywords=Software%20Engineer%20Backend%20Google",
    careerUrl:"https://www.google.com/about/careers/applications/jobs/results?q=Software%20Engineer",
-   tags:["python","java","backend","distributed systems","api","cloud"], posted:"2 days ago"},
+   tags:["python","java","backend","distributed systems","api","cloud"], posted:"2 days ago", perks:["health","pay"]},
   {id:2, title:"Product Manager, Search", company:"Google", location:"New York, NY", source:"Indeed",
    sourceUrl:"https://www.indeed.com/jobs?q=Product+Manager+Google",
    careerUrl:"https://www.google.com/about/careers/applications/jobs/results?q=Product%20Manager",
-   tags:["product management","roadmap","analytics","agile","strategy"], posted:"5 days ago"},
+   tags:["product management","roadmap","analytics","agile","strategy"], posted:"5 days ago", perks:["pay","health"]},
   {id:3, title:"Data Scientist, ML Infrastructure", company:"Google", location:"Seattle, WA", source:"Glassdoor",
    sourceUrl:"https://www.glassdoor.com/Job/jobs.htm?sc.keyword=Data+Scientist+Google",
    careerUrl:"https://www.google.com/about/careers/applications/jobs/results?q=Data%20Scientist",
-   tags:["machine learning","python","sql","statistics","tensorflow"], posted:"1 day ago"},
+   tags:["machine learning","python","sql","statistics","tensorflow"], posted:"1 day ago", perks:["pay"]},
   {id:4, title:"UX Designer, Cloud", company:"Google", location:"Remote", source:"ZipRecruiter",
    sourceUrl:"https://www.ziprecruiter.com/candidate/search?search=UX+Designer+Google",
    careerUrl:"https://www.google.com/about/careers/applications/jobs/results?q=UX%20Designer",
-   tags:["ux","design","figma","research","prototyping"], posted:"3 days ago"},
+   tags:["ux","design","figma","research","prototyping"], posted:"3 days ago", perks:["remote","health"]},
 
   {id:5, title:"Cloud Solutions Architect", company:"Microsoft", location:"Redmond, WA", source:"LinkedIn",
    sourceUrl:"https://www.linkedin.com/jobs/search/?keywords=Cloud%20Solutions%20Architect%20Microsoft",
    careerUrl:"https://jobs.careers.microsoft.com/global/en/search?q=Cloud%20Solutions%20Architect",
-   tags:["azure","cloud","architecture","devops","kubernetes"], posted:"4 days ago"},
+   tags:["azure","cloud","architecture","devops","kubernetes"], posted:"4 days ago", perks:["pay","health"]},
   {id:6, title:"Senior Software Engineer, Teams", company:"Microsoft", location:"Redmond, WA", source:"Indeed",
    sourceUrl:"https://www.indeed.com/jobs?q=Senior+Software+Engineer+Microsoft",
    careerUrl:"https://jobs.careers.microsoft.com/global/en/search?q=Software%20Engineer",
-   tags:["c#","javascript","react","backend","api"], posted:"1 week ago"},
+   tags:["c#","javascript","react","backend","api"], posted:"1 week ago", perks:["pay"]},
   {id:7, title:"Marketing Manager, Xbox", company:"Microsoft", location:"Remote", source:"Monster",
    sourceUrl:"https://www.monster.com/jobs/search?q=Marketing+Manager+Microsoft",
    careerUrl:"https://jobs.careers.microsoft.com/global/en/search?q=Marketing%20Manager",
-   tags:["marketing","campaigns","branding","analytics"], posted:"6 days ago"},
+   tags:["marketing","campaigns","branding","analytics"], posted:"6 days ago", perks:["remote"]},
 
   {id:8, title:"Software Development Engineer II", company:"Amazon", location:"Austin, TX", source:"LinkedIn",
    sourceUrl:"https://www.linkedin.com/jobs/search/?keywords=SDE%20II%20Amazon",
    careerUrl:"https://www.amazon.jobs/en/search?base_query=Software+Development+Engineer",
-   tags:["java","aws","distributed systems","backend","api"], posted:"2 days ago"},
+   tags:["java","aws","distributed systems","backend","api"], posted:"2 days ago", perks:["pay"]},
   {id:9, title:"Business Analyst, Supply Chain", company:"Amazon", location:"Seattle, WA", source:"Glassdoor",
    sourceUrl:"https://www.glassdoor.com/Job/jobs.htm?sc.keyword=Business+Analyst+Amazon",
    careerUrl:"https://www.amazon.jobs/en/search?base_query=Business+Analyst",
-   tags:["business analysis","sql","excel","supply chain","reporting"], posted:"3 days ago"},
+   tags:["business analysis","sql","excel","supply chain","reporting"], posted:"3 days ago", perks:["health"]},
   {id:10, title:"Customer Success Manager, AWS", company:"Amazon", location:"Remote", source:"ZipRecruiter",
    sourceUrl:"https://www.ziprecruiter.com/candidate/search?search=Customer+Success+Manager+AWS",
    careerUrl:"https://www.amazon.jobs/en/search?base_query=Customer+Success",
-   tags:["customer success","account management","aws","cloud","saas"], posted:"5 days ago"},
+   tags:["customer success","account management","aws","cloud","saas"], posted:"5 days ago", perks:["remote","health"]},
 
   {id:11, title:"Product Designer, Reality Labs", company:"Meta", location:"Menlo Park, CA", source:"LinkedIn",
    sourceUrl:"https://www.linkedin.com/jobs/search/?keywords=Product%20Designer%20Meta",
    careerUrl:"https://www.metacareers.com/jobs/?q=Product%20Designer",
-   tags:["design","figma","product design","research","prototyping"], posted:"1 day ago"},
+   tags:["design","figma","product design","research","prototyping"], posted:"1 day ago", perks:["pay","health"]},
   {id:12, title:"Machine Learning Engineer, Ads", company:"Meta", location:"New York, NY", source:"Indeed",
    sourceUrl:"https://www.indeed.com/jobs?q=Machine+Learning+Engineer+Meta",
    careerUrl:"https://www.metacareers.com/jobs/?q=Machine%20Learning%20Engineer",
-   tags:["machine learning","python","pytorch","ads","backend"], posted:"4 days ago"},
+   tags:["machine learning","python","pytorch","ads","backend"], posted:"4 days ago", perks:["pay"]},
 
   {id:13, title:"Solution Engineer", company:"Salesforce", location:"San Francisco, CA", source:"Glassdoor",
    sourceUrl:"https://www.glassdoor.com/Job/jobs.htm?sc.keyword=Solution+Engineer+Salesforce",
    careerUrl:"https://careers.salesforce.com/en/jobs/?search=Solution%20Engineer",
-   tags:["crm","sales engineering","saas","presales"], posted:"2 days ago"},
+   tags:["crm","sales engineering","saas","presales"], posted:"2 days ago", perks:["health"]},
   {id:14, title:"Account Executive, Enterprise", company:"Salesforce", location:"Chicago, IL", source:"LinkedIn",
    sourceUrl:"https://www.linkedin.com/jobs/search/?keywords=Account%20Executive%20Salesforce",
    careerUrl:"https://careers.salesforce.com/en/jobs/?search=Account%20Executive",
-   tags:["sales","account management","crm","enterprise","negotiation"], posted:"6 days ago"},
+   tags:["sales","account management","crm","enterprise","negotiation"], posted:"6 days ago", perks:["pay"]},
 
   {id:15, title:"iOS Software Engineer", company:"Apple", location:"Cupertino, CA", source:"Indeed",
    sourceUrl:"https://www.indeed.com/jobs?q=iOS+Software+Engineer+Apple",
    careerUrl:"https://jobs.apple.com/en-us/search?search=iOS%20Engineer",
-   tags:["swift","ios","mobile","xcode","objective-c"], posted:"3 days ago"},
+   tags:["swift","ios","mobile","xcode","objective-c"], posted:"3 days ago", perks:["pay","health"]},
 
   {id:16, title:"Content Strategist, Originals", company:"Netflix", location:"Los Gatos, CA", source:"LinkedIn",
    sourceUrl:"https://www.linkedin.com/jobs/search/?keywords=Content%20Strategist%20Netflix",
    careerUrl:"https://explore.jobs.netflix.net/careers?query=Content%20Strategist",
-   tags:["content strategy","media","analytics","marketing"], posted:"1 week ago"},
+   tags:["content strategy","media","analytics","marketing"], posted:"1 week ago", perks:["pay"]},
 
   {id:17, title:"Experience Designer", company:"Adobe", location:"San Jose, CA", source:"ZipRecruiter",
    sourceUrl:"https://www.ziprecruiter.com/candidate/search?search=Experience+Designer+Adobe",
    careerUrl:"https://careers.adobe.com/us/en/search-results?keywords=Experience%20Designer",
-   tags:["ux","design","figma","research"], posted:"4 days ago"},
+   tags:["ux","design","figma","research"], posted:"4 days ago", perks:["health"]},
 
   {id:18, title:"Backend Engineer, Payments", company:"Stripe", location:"Remote", source:"LinkedIn",
    sourceUrl:"https://www.linkedin.com/jobs/search/?keywords=Backend%20Engineer%20Stripe",
    careerUrl:"https://stripe.com/jobs/search?query=Backend%20Engineer",
-   tags:["backend","ruby","api","payments","distributed systems"], posted:"2 days ago"},
+   tags:["backend","ruby","api","payments","distributed systems"], posted:"2 days ago", perks:["remote","pay"]},
 
   {id:19, title:"Community Operations Manager", company:"Airbnb", location:"San Francisco, CA", source:"Monster",
    sourceUrl:"https://www.monster.com/jobs/search?q=Community+Operations+Manager+Airbnb",
    careerUrl:"https://careers.airbnb.com/positions/?_position_keywords=Community%20Operations",
-   tags:["operations","customer success","community","trust and safety"], posted:"5 days ago"},
+   tags:["operations","customer success","community","trust and safety"], posted:"5 days ago", perks:["health"]},
 
   {id:20, title:"Data Analyst, Personalization", company:"Spotify", location:"Remote", source:"Glassdoor",
    sourceUrl:"https://www.glassdoor.com/Job/jobs.htm?sc.keyword=Data+Analyst+Spotify",
    careerUrl:"https://www.lifeatspotify.com/jobs?q=Data%20Analyst",
-   tags:["sql","data analysis","python","analytics","tableau"], posted:"3 days ago"},
+   tags:["sql","data analysis","python","analytics","tableau"], posted:"3 days ago", perks:["remote"]},
 
   {id:21, title:"DevOps Engineer, Marketplace", company:"Uber", location:"San Francisco, CA", source:"Indeed",
    sourceUrl:"https://www.indeed.com/jobs?q=DevOps+Engineer+Uber",
    careerUrl:"https://www.uber.com/us/en/careers/list/?query=DevOps%20Engineer",
-   tags:["devops","kubernetes","aws","docker","ci/cd"], posted:"1 day ago"},
+   tags:["devops","kubernetes","aws","docker","ci/cd"], posted:"1 day ago", perks:["pay"]},
 ];
+
+/* Perk category metadata: icon, label, and color class used to render badges
+   on each job card. These are illustrative sample categories (this is a
+   prototype with sample listings), not verified benefits data. */
+const PERK_META = {
+  health: {label:"Good Health Benefits", icon:"🏥", cls:"perk-health"},
+  pay:    {label:"Competitive Pay",       icon:"💰", cls:"perk-pay"},
+  remote: {label:"Remote Friendly",       icon:"🏠", cls:"perk-remote"},
+};
 
 const LOCATIONS = [...new Set(JOBS.map(j=>j.location))].sort();
 
@@ -761,6 +778,10 @@ function renderResults(jobs, emptyMsg, note, matchScores){
           </div>
         </div>
         <div class="job-meta">${job.location} · Posted ${job.posted}</div>
+        ${job.perks && job.perks.length>0 ? `
+        <div class="perks">
+          ${job.perks.map(p=>PERK_META[p] ? `<span class="perk-badge ${PERK_META[p].cls}">${PERK_META[p].icon} ${PERK_META[p].label}</span>` : '').join('')}
+        </div>` : ''}
         ${peers.length>0 ? `
         <div class="actions">
           <button class="similar-btn" onclick='openSimilar(${JSON.stringify(job.company)}, ${job.id})'>🔥 ${peers.length} similar role${peers.length===1?'':'s'} at ${job.company}</button>
@@ -779,6 +800,7 @@ function openSimilar(company, excludeId){
     <div style="background:#fff;border:1px solid #e4e6ee;border-radius:12px;padding:16px 18px;margin-bottom:12px;">
       <div style="font-size:16px;font-weight:700;">${j.title}</div>
       <div style="font-size:13px;color:#6b7080;margin:4px 0 8px;">${j.location} · Posted ${j.posted} · ${j.source}</div>
+      ${j.perks && j.perks.length>0 ? `<div style="margin-bottom:8px;">${j.perks.map(p=>PERK_META[p] ? `<span style="display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;margin:0 5px 5px 0;background:#f1f2f7;color:#4a4f63;">${PERK_META[p].icon} ${PERK_META[p].label}</span>` : '').join('')}</div>` : ''}
       <div style="margin-bottom:10px;">${j.tags.map(t=>`<span style="display:inline-block;font-size:11px;background:#f1f2f7;color:#6b7080;padding:3px 8px;border-radius:6px;margin:0 5px 5px 0;">${t}</span>`).join('')}</div>
       <a href="${j.careerUrl}" target="_blank" rel="noopener" style="font-size:12.5px;font-weight:600;text-decoration:none;padding:8px 12px;border-radius:7px;border:1px solid #e4e6ee;color:#1c1f2b;background:#fff;">View ${j.company} Careers Page ↗</a>
     </div>
