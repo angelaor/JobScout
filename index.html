@@ -120,7 +120,7 @@
     <h2>Paste your resume</h2>
     <textarea id="resumeInput" placeholder="Paste your resume text here — JobScout will pull out your skills and titles and match them to open roles..."></textarea>
     <div class="row">
-      <select id="resumeSourceFilter"><option value="">All job boards</option></select>
+      <select id="resumeSourceFilter" onchange="handleSourceSelectChange(this)"><option value="">All job boards</option></select>
       <select id="resumeLocationFilter"><option value="">All locations</option></select>
       <button class="btn-primary" onclick="searchByResume()">Find Matching Roles</button>
     </div>
@@ -131,10 +131,30 @@
     <h2>Search by job title or keyword</h2>
     <input type="text" id="keywordInput" placeholder="e.g. Product Manager, React, Data Analyst...">
     <div class="row">
-      <select id="sourceFilter"><option value="">All job boards</option></select>
+      <select id="sourceFilter" onchange="handleSourceSelectChange(this)"><option value="">All job boards</option></select>
       <select id="locationFilter"><option value="">All locations</option></select>
       <button class="btn-primary" onclick="searchByKeyword()">Search Jobs</button>
     </div>
+  </div>
+
+  <div class="row" style="justify-content:flex-end; margin-top:-6px; margin-bottom:2px;">
+    <button class="link-btn" onclick="toggleManageBoards()" style="font-size:12px; padding:6px 10px;">⚙ Manage job boards</button>
+  </div>
+
+  <div class="panel" id="manageBoardsPanel" style="display:none;">
+    <h2>Your job boards</h2>
+    <div id="manageBoardsList"></div>
+    <p class="hint">Uncheck a board to remove it from your filters. Add new ones from the "All job boards" dropdown → "+ Add a job board…" — additions are saved in this browser.</p>
+  </div>
+
+  <div class="row" id="titleFilterRow" style="justify-content:flex-end; margin-top:-6px; margin-bottom:2px; display:none;">
+    <button class="link-btn" onclick="toggleTitleFilter()" style="font-size:12px; padding:6px 10px;">🏷 Filter job titles</button>
+  </div>
+
+  <div class="panel" id="titleFilterPanel" style="display:none;">
+    <h2>Job titles found for your resume</h2>
+    <div id="titleFilterList"></div>
+    <p class="hint">Uncheck a title to hide those roles from your results.</p>
   </div>
 
   <div class="results-meta">
@@ -255,7 +275,6 @@ const JOBS = [
    tags:["devops","kubernetes","aws","docker","ci/cd"], posted:"1 day ago"},
 ];
 
-const SOURCES = [...new Set(JOBS.map(j=>j.source))].sort();
 const LOCATIONS = [...new Set(JOBS.map(j=>j.location))].sort();
 
 function populateFilter(selectEl, values){
@@ -263,10 +282,99 @@ function populateFilter(selectEl, values){
     const o=document.createElement('option'); o.value=v; o.textContent=v; selectEl.appendChild(o);
   });
 }
-populateFilter(document.getElementById('sourceFilter'), SOURCES);
 populateFilter(document.getElementById('locationFilter'), LOCATIONS);
-populateFilter(document.getElementById('resumeSourceFilter'), SOURCES);
 populateFilter(document.getElementById('resumeLocationFilter'), LOCATIONS);
+
+/* ---------- Job boards: persisted list you can add to / remove from ---------- */
+const SOURCES_KEY = 'jobscout_sources_v1';
+
+function loadSourcesList(){
+  const saved = localStorage.getItem(SOURCES_KEY);
+  if(saved){
+    try {
+      const parsed = JSON.parse(saved);
+      if(Array.isArray(parsed)) return parsed;
+    } catch(e){ /* fall through to default */ }
+  }
+  return [...new Set(JOBS.map(j=>j.source))].sort();
+}
+function saveSourcesList(){
+  localStorage.setItem(SOURCES_KEY, JSON.stringify(SOURCES_LIST));
+}
+let SOURCES_LIST = loadSourcesList();
+
+function renderSourceOptions(){
+  ['sourceFilter','resumeSourceFilter'].forEach(id=>{
+    const sel = document.getElementById(id);
+    const current = sel.value;
+    sel.innerHTML = '<option value="">All job boards</option>';
+    SOURCES_LIST.forEach(s=>{
+      const o = document.createElement('option');
+      o.value = s; o.textContent = s;
+      sel.appendChild(o);
+    });
+    const otherOpt = document.createElement('option');
+    otherOpt.value = '__other__';
+    otherOpt.textContent = '+ Add a job board…';
+    sel.appendChild(otherOpt);
+    sel.value = SOURCES_LIST.includes(current) ? current : '';
+  });
+  renderManageBoardsList();
+}
+
+function handleSourceSelectChange(selectEl){
+  if(selectEl.value !== '__other__') return;
+  const name = (prompt('Add a job board (e.g. "Wellfound", "Dice", a specific company site):') || '').trim();
+  selectEl.value = '';
+  if(!name) return;
+  if(!SOURCES_LIST.some(s => s.toLowerCase() === name.toLowerCase())){
+    SOURCES_LIST.push(name);
+    SOURCES_LIST.sort();
+    saveSourcesList();
+  }
+  renderSourceOptions();
+  selectEl.value = name;
+}
+
+function removeSourceBoard(name){
+  SOURCES_LIST = SOURCES_LIST.filter(s => s !== name);
+  saveSourcesList();
+  ['sourceFilter','resumeSourceFilter'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el.value === name) el.value = '';
+  });
+  renderSourceOptions();
+}
+
+function renderManageBoardsList(){
+  const list = document.getElementById('manageBoardsList');
+  if(!list) return;
+  list.innerHTML = '';
+  if(SOURCES_LIST.length === 0){
+    list.innerHTML = '<p class="hint">No job boards in your list yet — add one from the dropdown above.</p>';
+    return;
+  }
+  SOURCES_LIST.forEach(s=>{
+    const row = document.createElement('label');
+    row.style.cssText = 'display:flex; align-items:center; gap:8px; padding:6px 0; font-size:14px;';
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = true;
+    checkbox.onchange = () => removeSourceBoard(s);
+    row.appendChild(checkbox);
+    row.appendChild(document.createTextNode(s));
+    list.appendChild(row);
+  });
+}
+
+function toggleManageBoards(){
+  const panel = document.getElementById('manageBoardsPanel');
+  const isHidden = !panel.style.display || panel.style.display === 'none';
+  panel.style.display = isHidden ? 'block' : 'none';
+  if(isHidden) renderManageBoardsList();
+}
+
+renderSourceOptions();
 
 /* ---------- Reset ---------- */
 function resetPage(){
@@ -279,6 +387,9 @@ function resetPage(){
   document.getElementById('results').innerHTML = '';
   document.getElementById('resultsCount').textContent = 'Paste a resume or search a keyword to see matching roles.';
   document.getElementById('sourcesLine').textContent = '';
+  lastResumeResults = [];
+  excludedTitles = new Set();
+  renderTitleFilterList();
   switchTab('resume');
   window.scrollTo({top:0, behavior:'smooth'});
 }
@@ -332,9 +443,16 @@ function scoreJobAgainstText(job, text){
   };
 }
 
+/* ---------- Job title filter (populated after a resume search) ---------- */
+let lastResumeResults = [];  // the scored matches from the most recent resume search
+let excludedTitles = new Set();  // titles the person has unchecked
+
 function searchByResume(){
   const text = document.getElementById('resumeInput').value.toLowerCase();
   if(!text.trim()){
+    lastResumeResults = [];
+    excludedTitles = new Set();
+    renderTitleFilterList();
     renderResults([], "Paste some resume text first.");
     return;
   }
@@ -348,25 +466,97 @@ function searchByResume(){
     .filter(x => !loc || x.job.location === loc)
     .sort((a,b) => b.pct - a.pct);
 
+  lastResumeResults = scored;
+  excludedTitles = new Set();
+  renderTitleFilterList();
+
   if(scored.length===0){
     renderResults([], "No strong title or skill matches found for those filters. Try broadening your job board or location filter.");
     return;
   }
 
+  renderResumeResultsView();
+}
+
+/* Re-renders the current resume results honoring which titles are checked/unchecked. */
+function renderResumeResultsView(){
+  const visible = lastResumeResults.filter(x => !excludedTitles.has(x.job.title));
+
+  if(visible.length===0){
+    renderResults([], "All job titles are unchecked — check at least one title above to see results.");
+    return;
+  }
+
   const matchScores = {};
-  scored.forEach(x => matchScores[x.job.id] = x.pct);
-  const topTitleWords = [...new Set(scored.flatMap(x=>x.titleMatches))].slice(0,6);
+  visible.forEach(x => matchScores[x.job.id] = x.pct);
+  const topTitleWords = [...new Set(visible.flatMap(x=>x.titleMatches))].slice(0,6);
   const note = topTitleWords.length
     ? `Ranked by title match: ${topTitleWords.join(', ')}`
     : 'Ranked by skill overlap with your resume';
 
-  renderResults(scored.map(x=>x.job), null, note, matchScores);
+  renderResults(visible.map(x=>x.job), null, note, matchScores);
+}
+
+/* Builds the "Job titles found for your resume" checklist from the distinct
+   titles in the latest resume search results. */
+function renderTitleFilterList(){
+  const row = document.getElementById('titleFilterRow');
+  const panel = document.getElementById('titleFilterPanel');
+  const list = document.getElementById('titleFilterList');
+  const uniqueTitles = [...new Set(lastResumeResults.map(x => x.job.title))];
+
+  if(uniqueTitles.length===0){
+    row.style.display = 'none';
+    panel.style.display = 'none';
+    list.innerHTML = '';
+    return;
+  }
+
+  row.style.display = 'flex';
+  list.innerHTML = '';
+  uniqueTitles.forEach(title=>{
+    const item = document.createElement('label');
+    item.style.cssText = 'display:flex; align-items:center; gap:8px; padding:6px 0; font-size:14px;';
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = !excludedTitles.has(title);
+    checkbox.onchange = () => {
+      if(checkbox.checked) excludedTitles.delete(title);
+      else excludedTitles.add(title);
+      renderResumeResultsView();
+    };
+    item.appendChild(checkbox);
+    item.appendChild(document.createTextNode(title));
+    list.appendChild(item);
+  });
+}
+
+function toggleTitleFilter(){
+  const panel = document.getElementById('titleFilterPanel');
+  const isHidden = !panel.style.display || panel.style.display === 'none';
+  panel.style.display = isHidden ? 'block' : 'none';
+}
+
+/* Splits a pasted skills/keywords blob into individual search terms. Handles
+   commas, pipes, semicolons, newlines, and bullet-point markers (•, -, *,
+   ‣, ◦, ▪, ·) as separators, since resumes are formatted with all of these. */
+function parseKeywordTerms(raw){
+  return raw
+    .split(/\n+/)
+    .flatMap(line => line.split(/[,|;]+/))
+    .map(t => t.replace(/^[\s•\-*‣◦▪·]+/, '').trim())
+    .filter(Boolean);
 }
 
 function searchByKeyword(){
+  // A keyword search replaces the currently displayed results, so the
+  // resume-specific title filter no longer applies — clear and hide it.
+  lastResumeResults = [];
+  excludedTitles = new Set();
+  renderTitleFilterList();
+
   const raw = document.getElementById('keywordInput').value.toLowerCase().trim();
-  // Support comma-separated terms (e.g. auto-filled resume skills) as an OR match.
-  const terms = raw.split(',').map(t=>t.trim()).filter(Boolean);
+  const terms = parseKeywordTerms(raw);
   const src = document.getElementById('sourceFilter').value;
   const loc = document.getElementById('locationFilter').value;
 
