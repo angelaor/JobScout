@@ -130,17 +130,6 @@
     </select>
   </div>
 
-  <div class="panel" style="padding:14px 20px;">
-    <select id="specialtyBoardSelect" onchange="jumpToSpecialtyBoard(this)" style="width:100%;">
-      <option value="">👥 Job boards for women &amp; 50+ job seekers…</option>
-    </select>
-    <p class="hint" style="margin-top:10px;">
-      Want to check a specific employer yourself? See Forbes'
-      <a href="https://www.forbes.com/lists/best-employers-women/" target="_blank" rel="noopener">Best Employers for Women list</a>
-      or the EEOC's <a href="https://www.eeoc.gov/age-discrimination" target="_blank" rel="noopener">age discrimination resources</a>.
-    </p>
-  </div>
-
   <div class="panel" id="resumePanel">
     <h2>Paste your resume</h2>
     <textarea id="resumeInput" placeholder="Paste your resume text here — JobScout will pull out your skills and titles and match them to open roles..."></textarea>
@@ -320,7 +309,8 @@ populateFilter(document.getElementById('locationFilter'), LOCATIONS);
 populateFilter(document.getElementById('resumeLocationFilter'), LOCATIONS);
 
 /* ---------- Job boards: persisted list you can add to / remove from ---------- */
-const SOURCES_KEY = 'jobscout_sources_v1';
+const SOURCES_KEY = 'jobscout_sources_v2';
+const EXTRA_DEFAULT_BOARDS = ["AARP Job Search", "Fairygodboss", "FlexJobs", "Where Women Work", "Workforce50.com"];
 
 function loadSourcesList(){
   const saved = localStorage.getItem(SOURCES_KEY);
@@ -330,7 +320,8 @@ function loadSourcesList(){
       if(Array.isArray(parsed)) return parsed;
     } catch(e){ /* fall through to default */ }
   }
-  return [...new Set(JOBS.map(j=>j.source))].sort();
+  const jobSources = [...new Set(JOBS.map(j=>j.source))];
+  return [...new Set([...jobSources, ...EXTRA_DEFAULT_BOARDS])].sort();
 }
 function saveSourcesList(){
   localStorage.setItem(SOURCES_KEY, JSON.stringify(SOURCES_LIST));
@@ -480,34 +471,6 @@ function populateCompanyCareerSelect(){
 populateCompanyCareerSelect();
 
 function jumpToCompanyCareerPage(selectEl){
-  const url = selectEl.value;
-  if(url){
-    window.open(url, '_blank', 'noopener');
-  }
-  selectEl.value = '';
-}
-
-/* ---------- Job boards focused on women & workers 50+ (quick jump) ---------- */
-const SPECIALTY_JOB_BOARDS = [
-  {name:"AARP Job Search (50+ focused)", url:"https://www.aarp.org/work/job-search/"},
-  {name:"Workforce50.com (50+ focused)", url:"https://www.workforce50.com"},
-  {name:"FlexJobs (flexible/remote, popular with 50+)", url:"https://www.flexjobs.com"},
-  {name:"Fairygodboss (women's career community)", url:"https://fairygodboss.com"},
-  {name:"Where Women Work (women's career site)", url:"https://www.wherewomenwork.com"},
-].sort((a,b) => a.name.localeCompare(b.name));
-
-function populateSpecialtyBoardSelect(){
-  const sel = document.getElementById('specialtyBoardSelect');
-  SPECIALTY_JOB_BOARDS.forEach(b=>{
-    const o = document.createElement('option');
-    o.value = b.url;
-    o.textContent = b.name;
-    sel.appendChild(o);
-  });
-}
-populateSpecialtyBoardSelect();
-
-function jumpToSpecialtyBoard(selectEl){
   const url = selectEl.value;
   if(url){
     window.open(url, '_blank', 'noopener');
