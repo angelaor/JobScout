@@ -116,6 +116,23 @@
     <button class="tab-btn" id="tabKeywordBtn" onclick="switchTab('keyword')">🔎 Search by Keywords</button>
   </div>
 
+  <div class="panel" style="padding:14px 20px;">
+    <select id="companyCareerSelect" onchange="jumpToCompanyCareerPage(this)" style="width:100%;">
+      <option value="">🏢 Jump straight to a company's career page…</option>
+    </select>
+  </div>
+
+  <div class="panel" style="padding:14px 20px;">
+    <select id="specialtyBoardSelect" onchange="jumpToSpecialtyBoard(this)" style="width:100%;">
+      <option value="">👥 Job boards for women &amp; 50+ job seekers…</option>
+    </select>
+    <p class="hint" style="margin-top:10px;">
+      Want to check a specific employer yourself? See Forbes'
+      <a href="https://www.forbes.com/lists/best-employers-women/" target="_blank" rel="noopener">Best Employers for Women list</a>
+      or the EEOC's <a href="https://www.eeoc.gov/age-discrimination" target="_blank" rel="noopener">age discrimination resources</a>.
+    </p>
+  </div>
+
   <div class="panel" id="resumePanel">
     <h2>Paste your resume</h2>
     <textarea id="resumeInput" placeholder="Paste your resume text here — JobScout will pull out your skills and titles and match them to open roles..."></textarea>
@@ -375,6 +392,111 @@ function toggleManageBoards(){
 }
 
 renderSourceOptions();
+
+/* ---------- Company career pages (quick jump) ---------- */
+const COMPANY_CAREER_PAGES = [
+  {name:"Amazon", url:"https://www.amazon.jobs"},
+  {name:"Apple", url:"https://jobs.apple.com"},
+  {name:"AT&T", url:"https://www.att.jobs"},
+  {name:"Bank of America", url:"https://careers.bankofamerica.com"},
+  {name:"Berkshire Hathaway", url:null, note:"no centralized career site — jobs are posted by individual subsidiaries"},
+  {name:"Cardinal Health", url:"https://jobs.cardinalhealth.com"},
+  {name:"Caterpillar", url:"https://www.caterpillar.com/en/careers"},
+  {name:"Chevron", url:"https://careers.chevron.com"},
+  {name:"Cisco", url:"https://jobs.cisco.com"},
+  {name:"Citigroup", url:"https://jobs.citi.com"},
+  {name:"Comcast", url:"https://jobs.comcast.com"},
+  {name:"Costco", url:"https://www.costco.com/jobs.html"},
+  {name:"CVS Health", url:"https://jobs.cvshealth.com"},
+  {name:"Dell Technologies", url:"https://jobs.dell.com"},
+  {name:"Delta Air Lines", url:"https://delta.avature.net/careers"},
+  {name:"ExxonMobil", url:"https://jobs.exxonmobil.com"},
+  {name:"FedEx", url:"https://careers.fedex.com"},
+  {name:"Ford Motor Company", url:"https://corporate.ford.com/careers"},
+  {name:"General Dynamics", url:"https://www.gd.com/careers"},
+  {name:"General Electric (GE)", url:"https://jobs.gecareers.com"},
+  {name:"General Motors (GM)", url:"https://search-careers.gm.com"},
+  {name:"Google (Alphabet)", url:"https://careers.google.com"},
+  {name:"Home Depot", url:"https://careers.homedepot.com"},
+  {name:"Honeywell", url:"https://careers.honeywell.com"},
+  {name:"IBM", url:"https://www.ibm.com/employment"},
+  {name:"Intel", url:"https://jobs.intel.com"},
+  {name:"Johnson & Johnson", url:"https://careers.jnj.com"},
+  {name:"JPMorgan Chase", url:"https://careers.jpmorgan.com"},
+  {name:"Kroger", url:"https://jobs.kroger.com"},
+  {name:"Lockheed Martin", url:"https://www.lockheedmartinjobs.com"},
+  {name:"Lowe's", url:"https://jobs.lowes.com"},
+  {name:"Marathon Petroleum", url:"https://mpc.applicantpro.com/jobs"},
+  {name:"Meta (Facebook)", url:"https://www.metacareers.com"},
+  {name:"Microsoft", url:"https://careers.microsoft.com"},
+  {name:"Nike", url:"https://jobs.nike.com"},
+  {name:"Northrop Grumman", url:"https://careers.northropgrumman.com"},
+  {name:"PepsiCo", url:"https://www.pepsicojobs.com"},
+  {name:"Pfizer", url:"https://www.pfizer.com/careers"},
+  {name:"Procter & Gamble (P&G)", url:"https://www.pgcareers.com"},
+  {name:"Raytheon / RTX", url:"https://jobs.rtx.com"},
+  {name:"Starbucks", url:"https://careers.starbucks.com"},
+  {name:"Target", url:"https://jobs.target.com"},
+  {name:"Tesla", url:"https://www.tesla.com/careers"},
+  {name:"UPS", url:"https://www.jobs-ups.com"},
+  {name:"UnitedHealth Group", url:"https://careers.unitedhealthgroup.com"},
+  {name:"Verizon", url:"https://www.verizon.com/about/careers"},
+  {name:"Walmart", url:"https://careers.walmart.com"},
+  {name:"Wells Fargo", url:"https://www.wellsfargojobs.com"},
+].sort((a,b) => a.name.localeCompare(b.name));
+
+function populateCompanyCareerSelect(){
+  const sel = document.getElementById('companyCareerSelect');
+  COMPANY_CAREER_PAGES.forEach(c=>{
+    const o = document.createElement('option');
+    if(c.url){
+      o.value = c.url;
+      o.textContent = c.name;
+    } else {
+      o.value = '';
+      o.textContent = `${c.name} (${c.note})`;
+      o.disabled = true;
+    }
+    sel.appendChild(o);
+  });
+}
+populateCompanyCareerSelect();
+
+function jumpToCompanyCareerPage(selectEl){
+  const url = selectEl.value;
+  if(url){
+    window.open(url, '_blank', 'noopener');
+  }
+  selectEl.value = '';
+}
+
+/* ---------- Job boards focused on women & workers 50+ (quick jump) ---------- */
+const SPECIALTY_JOB_BOARDS = [
+  {name:"AARP Job Search (50+ focused)", url:"https://www.aarp.org/work/job-search/"},
+  {name:"Workforce50.com (50+ focused)", url:"https://www.workforce50.com"},
+  {name:"FlexJobs (flexible/remote, popular with 50+)", url:"https://www.flexjobs.com"},
+  {name:"Fairygodboss (women's career community)", url:"https://fairygodboss.com"},
+  {name:"Where Women Work (women's career site)", url:"https://www.wherewomenwork.com"},
+].sort((a,b) => a.name.localeCompare(b.name));
+
+function populateSpecialtyBoardSelect(){
+  const sel = document.getElementById('specialtyBoardSelect');
+  SPECIALTY_JOB_BOARDS.forEach(b=>{
+    const o = document.createElement('option');
+    o.value = b.url;
+    o.textContent = b.name;
+    sel.appendChild(o);
+  });
+}
+populateSpecialtyBoardSelect();
+
+function jumpToSpecialtyBoard(selectEl){
+  const url = selectEl.value;
+  if(url){
+    window.open(url, '_blank', 'noopener');
+  }
+  selectEl.value = '';
+}
 
 /* ---------- Reset ---------- */
 function resetPage(){
